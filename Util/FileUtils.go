@@ -69,15 +69,19 @@ func readLine(fileName string, lastIndex int) (int, map[string]bool, error) {
 	c, err := file.ReadAt(buf, int64(lastIndex))
 	lastIndex = bytes.LastIndex(buf[:c], lineSep)
 	lines := bytes.Split(buf[:lastIndex], lineSep)
-	if lastIndex == 0 && c > lastIndex {
-		lines = bytes.Split(buf[:c], lineSep)
-	}
-	if c <= BUFSIZE && lastIndex + 1 < c {
-		lines = bytes.Split(buf[:c], lineSep)
+	// What if the last line doesn't end with a \n
+	// You have reached the EOF
+	// This is to get all the data from the buffer,
+	// since the entire buffer consists of a single line
+	if err == io.EOF {
+		if c > lastIndex+1 {
+			lines = bytes.Split(buf[:c], lineSep)
+		}
 	}
 	for i := 0; i < len(lines); i++ {
-		if len(bytes.TrimSpace(lines[i])) > 0 {
-			result[string(lines[i])] = true
+		res := bytes.TrimSpace(lines[i])
+		if len(res) > 0 {
+			result[string(res)] = true
 		}
 	}
 	if err != nil {
@@ -112,11 +116,11 @@ func constructPriorityQueue(fileBucket map[string]int, bucketPQ *PriorityQueue) 
 	filePQ := make(PriorityQueue, 0)
 	heap.Init(&filePQ)
 	var lastInserted string
-	// keeping it less to 4000 sentences for now in the main PQ
-	// Each file is 2KB, assuming ulimit is 10240 max, average sentence is 100 Bytes
-	// 10240 * 2048 / 100 ~= 200,000 lines processed in a single heap
-	// which equals a mem of 20 MB, should be able to process a minimum of 100 such buckets in a
-	// 2 Gig  ram machine
+	// keeping it less to 2000 * 100 sentences for now in the main PQ
+	// Each file buffer is 2MB, assuming ulimit is 10240 max, average sentence is 100 Bytes
+	// 10240 * 2048 * 1024 / 100 ~= 200,000,000 lines needs processed in a single heap
+	// which equals a mem of 2 GB, should be able to process a maximum of 30 such buckets in a
+	// 30 Gig ram machine
 	for ;len(*bucketPQ) < 200000 && len(fileBucket) != 0; {
 		for fileName, line := range fileBucket {
 			lastByte, temp, err := readLine(fileName, line)
