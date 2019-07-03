@@ -56,14 +56,14 @@ func GetFilesInDirectory(dirName string) []map[string]int {
  * You can seek from the point you left off, if its a big file
  */
 func readLine(fileName string, lastIndex int) (int, map[string]bool, error) {
-	BUFSIZE := 2048
+	BUFSIZE := 2 * 1024 * 1024
 	result := make(map[string]bool)
 	file, err := os.Open(fileName)
 	defer file.Close()
 	if err != nil {
 		log.Fatal(err)
 	}
-	// 2KB buffer for each file
+	// 2MB buffer for each file
 	buf := make([]byte, BUFSIZE)
 	lineSep := []byte{'\n'}
 	c, err := file.ReadAt(buf, int64(lastIndex))
